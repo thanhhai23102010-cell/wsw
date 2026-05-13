@@ -1,36 +1,52 @@
-from flask import Flask, render_template, request, redirect
+from flask import (
+    Flask,
+    render_template,
+    request,
+    redirect,
+    session,
+    url_for,
+    send_from_directory
+)
+
+import os
 import sqlite3
 from docx import Document
-import cloudinary
-import cloudinary.uploader
 
 app = Flask(__name__)
 
+app.secret_key = "secret123"
+
+UPLOAD_FOLDER = "uploads"
 DB_NAME = "database.db"
 
-# =========================
-# Cloudinary Config
-# =========================
-cloudinary.config(
-    cloud_name="YOUR_CLOUD_NAME",
-    api_key="YOUR_API_KEY",
-    api_secret="YOUR_API_SECRET",
-    secure=True
-)
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+# =====================
+# DATABASE
+# =====================
 
-# =========================
-# Tạo database
-# =========================
 conn = sqlite3.connect(DB_NAME)
 cursor = conn.cursor()
 
+# Users
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS users (
+
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE,
+    password TEXT
+
+)
+""")
+
+# Files
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS files (
+
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     filename TEXT,
-    fileurl TEXT,
     content TEXT
+
 )
 """)
 
@@ -38,85 +54,277 @@ conn.commit()
 conn.close()
 
 
-# =========================
-# Trang chủ
-# =========================
+# =====================
+# READ WORD
+# =====================
+
+def read_docx(path):
+
+    doc = Document(path)
+
+    text = []
+
+    for para in doc.paragraphs:
+        text.append(para.text)
+
+    return "\n".join(text)
+
+
+# =====================
+# LOGIN CHECK
+# =====================
+
+def logged_in():
+
+    return "user" in session
+
+
+# =====================
+# HOME
+# =====================
+
 @app.route("/")
-# =========================
-# Upload nhiều file
-# =========================
-@app.route("/upload", methods=["POST"])
-def upload():
+def home():
 
-    files = request.files.getlist("file")
+    if not logged_in():
+        return redirect("/login")
 
-    for file in files:
+    query = request.args.get("query", "")
 
-        if file.filename == "":
-            continue
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
 
-        # Upload lên Cloudinary
-        result = cloudinary.uploader.upload(
-            file,
-            resource_type="raw"
+    if query:
+
+        cursor.execute(
+            """
+            SELECT * FROM files
+            WHERE filename LIKE ?
+            OR content LIKE ?
+            """,
+            (f"%{query}%", f"%{query}%")
         )
 
-        file_url = result["secure_url"]
+    else:
 
-        # Đọc nội dung Word
-        file.seek(0)
+        cursor.execute(
+            "SELECT * FROM files ORDER BY id DESC"
+        )
 
-        doc = Document(file)
+    files = cursor.fetchall()
 
-        text = []
+    conn.close()
 
-        for para in doc.paragraphs:
-            text.append(para.text)
+    return render_template(
+        "index.html",
+        files=files,
+        query=query,
+        username=session["user"]
+    )
 
-        content = "\n".join(text)
 
-        # Lưu database
+# =====================
+# REGISTER
+# =====================
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+
+    if request.method == "POST":
+
+        username = request.form["username"]
+        password = request.form["password"]
+
+        conn = sqlite3.connect(DB_NAME)
+        cursor = conn.cursor()
+
+        try:
+
+            cursor.execute(
+                """
+                INSERT INTO users (username, password)
+                VALUES (?, ?)
+                """,
+                (username, password)
+            )
+
+            conn.commit()
+
+        except:
+            return "Tài khoản đã tồn tại"
+
+        conn.close()
+
+        return redirect("/login")
+
+    return render_template("register.html")
+
+
+# =====================
+# LOGIN
+# =====================
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+
+    if request.method == "POST":
+
+        username = request.form["username"]
+        password = request.form["password"]
+
         conn = sqlite3.connect(DB_NAME)
         cursor = conn.cursor()
 
         cursor.execute(
             """
-            INSERT INTO files (filename, fileurl, content)
-            VALUES (?, ?, ?)
+            SELECT * FROM users
+            WHERE username=?
+            AND password=?
             """,
-            (file.filename, file_url, content)
+            (username, password)
         )
 
-        conn.commit()
+        user = cursor.fetchone()
+
         conn.close()
+
+        if user:
+
+            session["user"] = username
+
+            return redirect("/")
+
+        else:
+
+            return "Sai tài khoản hoặc mật khẩu"
+
+    return render_template("login.html")
+
+
+# =====================
+# LOGOUT
+# =====================
+
+@app.route("/logout")
+def logout():
+
+    session.clear()
+
+    return redirect("/login")
+
+
+# =====================
+# UPLOAD
+# =====================
+
+@app.route("/upload", methods=["POST"])
+def upload():
+
+    if not logged_in():
+        return redirect("/login")
+
+    files = request.files.getlist("file")
+
+    for file in files:
+
+        if file.filename != "":
+
+            save_path = os.path.join(
+                UPLOAD_FOLDER,
+                file.filename
+            )
+
+            file.save(save_path)
+
+            content = read_docx(save_path)
+
+            conn = sqlite3.connect(DB_NAME)
+            cursor = conn.cursor()
+
+            cursor.execute(
+                """
+                INSERT INTO files (filename, content)
+                VALUES (?, ?)
+                """,
+                (file.filename, content)
+            )
+
+            conn.commit()
+            conn.close()
 
     return redirect("/")
 
 
-# =========================
-# Xóa file
-# =========================
+# =====================
+# DOWNLOAD
+# =====================
+
+@app.route("/download/<filename>")
+def download(filename):
+
+    if not logged_in():
+        return redirect("/login")
+
+    return send_from_directory(
+        UPLOAD_FOLDER,
+        filename,
+        as_attachment=True
+    )
+
+
+# =====================
+# DELETE
+# =====================
+
 @app.route("/delete/<int:file_id>")
 def delete(file_id):
+
+    if not logged_in():
+        return redirect("/login")
 
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
 
     cursor.execute(
-        "DELETE FROM files WHERE id=?",
+        "SELECT filename FROM files WHERE id=?",
         (file_id,)
     )
-    conn.commit()
+
+    file = cursor.fetchone()
+
+    if file:
+
+        filename = file[0]
+
+        path = os.path.join(
+            UPLOAD_FOLDER,
+            filename
+        )
+
+        if os.path.exists(path):
+            os.remove(path)
+
+        cursor.execute(
+            "DELETE FROM files WHERE id=?",
+            (file_id,)
+        )
+
+        conn.commit()
+
     conn.close()
 
     return redirect("/")
 
 
-# =========================
-# Xem trước file Word
-# =========================
+# =====================
+# PREVIEW
+# =====================
+
 @app.route("/preview/<int:file_id>")
 def preview(file_id):
+
+    if not logged_in():
+        return redirect("/login")
 
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
@@ -136,8 +344,5 @@ def preview(file_id):
     )
 
 
-# =========================
-# Chạy app
-# =========================
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="127.0.0.1", port=5000)

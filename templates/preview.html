@@ -1,26 +1,59 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <title>Xem trước file</title>
 
-    <link rel="stylesheet" href="/static/style.css">
+<meta charset="UTF-8">
+
+<title>Preview</title>
+
+<style>
+
+body{
+    font-family:Arial;
+    background:#121212;
+    color:white;
+    padding:30px;
+}
+
+.container{
+    max-width:1000px;
+    margin:auto;
+}
+
+.preview{
+
+    background:#1e1e1e;
+    padding:30px;
+    border-radius:15px;
+    white-space:pre-wrap;
+    line-height:1.7;
+
+}
+
+a{
+    color:#00ccff;
+}
+
+</style>
+
 </head>
 <body>
 
 <div class="container">
 
-    <h1>{{ file[1] }}</h1>
+<h1>{{ file[1] }}</h1>
 
-    <div class="preview-box">
-        <pre>{{ file[3] }}</pre>
-    </div>
+<div class="preview">
 
-    <br>
+{{ file[2] }}
 
-    <a href="/">
-        Quay lại
-    </a>
+</div>
+
+<br>
+
+<a href="/">
+    ← Quay lại
+</a>
 
 </div>
 

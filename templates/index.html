@@ -1,57 +1,209 @@
+<p>
+Xin chào {{ username }}
+</p>
+
+<a href="/logout">
+    Đăng xuất
+</a>
+
+<hr>
 <!DOCTYPE html>
-            Upload
-        </button>
+<html lang="vi">
+<head>
 
-    </form>
+<meta charset="UTF-8">
 
-    <br>
+<title>Word Search</title>
 
-    <!-- Search -->
-    <form method="GET" action="/">
+<style>
 
-        <input
-            type="text"
-            name="query"
-            placeholder="Tìm kiếm file hoặc nội dung..."
-            value="{{ query }}"
-        >
+body{
+    font-family:Arial;
+    background:#121212;
+    color:white;
+    padding:30px;
+}
 
-        <button type="submit">
-            Tìm
-        </button>
+.container{
+    max-width:1000px;
+    margin:auto;
+}
 
-    </form>
+h1{
+    text-align:center;
+    margin-bottom:40px;
+}
 
-    <hr>
+.upload-box{
 
-    <!-- Danh sách file -->
-    {% for file in files %}
+    border:2px dashed #666;
+    padding:40px;
+    text-align:center;
+    border-radius:15px;
+    margin-bottom:30px;
+    background:#1e1e1e;
 
-    <div class="card">
+}
 
-        <h2>{{ file[1] }}</h2>
+.upload-box.dragover{
+    border-color:#00ff99;
+}
 
-        <div class="buttons">
+input,button{
 
-            <a href="{{ file[2] }}" target="_blank">
-                Download
-            </a>
+    padding:12px;
+    border:none;
+    border-radius:8px;
 
-            <a href="/preview/{{ file[0] }}">
-                Preview
-            </a>
+}
 
-            <a href="/delete/{{ file[0] }}">
-                Delete
-            </a>
+button{
+    cursor:pointer;
+}
 
-        </div>
+.search{
+    margin-bottom:30px;
+}
+
+.card{
+
+    background:#1e1e1e;
+    padding:20px;
+    border-radius:15px;
+    margin-bottom:20px;
+
+}
+
+.buttons a{
+
+    color:#00ccff;
+    margin-right:15px;
+    text-decoration:none;
+
+}
+
+</style>
+
+</head>
+<body>
+
+<div class="container">
+
+<h1>📄 Word Search Website</h1>
+
+<!-- Upload -->
+
+<form
+    action="/upload"
+    method="POST"
+    enctype="multipart/form-data"
+>
+
+<div class="upload-box" id="drop-area">
+
+    <p>Kéo thả file Word vào đây</p>
+
+    <input
+        type="file"
+        name="file"
+        id="fileElem"
+        accept=".docx"
+        multiple
+    >
+
+    <br><br>
+
+    <button type="submit">
+        Upload
+    </button>
+
+</div>
+
+</form>
+
+<!-- Search -->
+
+<form method="GET" action="/" class="search">
+
+    <input
+        type="text"
+        name="query"
+        placeholder="Tìm kiếm..."
+        value="{{ query }}"
+    >
+
+    <button type="submit">
+        Tìm
+    </button>
+
+</form>
+
+<!-- Danh sách -->
+
+{% for file in files %}
+
+<div class="card">
+
+    <h2>{{ file[1] }}</h2>
+
+    <div class="buttons">
+
+        <a href="/download/{{ file[1] }}">
+            Download
+        </a>
+
+        <a href="/preview/{{ file[0] }}">
+            Preview
+        </a>
+
+        <a href="/delete/{{ file[0] }}">
+            Delete
+        </a>
 
     </div>
 
-    {% endfor %}
+</div>
+
+{% endfor %}
 
 </div>
+
+<script>
+
+let dropArea = document.getElementById("drop-area");
+
+["dragenter","dragover"].forEach(eventName => {
+
+    dropArea.addEventListener(eventName, e => {
+
+        e.preventDefault();
+
+        dropArea.classList.add("dragover");
+
+    });
+
+});
+
+["dragleave","drop"].forEach(eventName => {
+
+    dropArea.addEventListener(eventName, e => {
+
+        e.preventDefault();
+
+        dropArea.classList.remove("dragover");
+
+    });
+
+});
+
+dropArea.addEventListener("drop", e => {
+
+    document.getElementById("fileElem").files =
+        e.dataTransfer.files;
+
+});
+
+</script>
 
 </body>
 </html>
