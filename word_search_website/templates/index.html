@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Quản Lý File Word</title>
+
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+
+    <div class="container">
+
+        <h1>Quản Lý File Word</h1>
+
+        <!-- Upload -->
+        <form action="/upload" method="POST" enctype="multipart/form-data">
+
+            <input type="file" name="file" accept=".docx" required>
+
+            <button type="submit">
+                Upload
+            </button>
+
+        </form>
+
+        <br>
+
+        <!-- Search -->
+        <form method="GET" action="/">
+
+            <input
+                type="text"
+                name="query"
+                placeholder="Tìm kiếm file..."
+            >
+
+            <button type="submit">
+                Tìm
+            </button>
+
+        </form>
+
+        <hr>
+
+        <!-- Danh sách file -->
+        {% for file in files %}
+
+        <div>
+
+            <h3>{{ file[1] }}</h3>
+
+            <a href="/download/{{ file[1] }}">
+                Tải xuống
+            </a>
+
+        </div>
+
+        <hr>
+
+        {% endfor %}
+
+    </div>
+
+</body>
+
+</html>
