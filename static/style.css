@@ -1,0 +1,60 @@
+body {
+    font-family: Arial;
+    background: #f4f4f4;
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    width: 800px;
+    margin: auto;
+    margin-top: 40px;
+}
+
+h1 {
+    text-align: center;
+}
+
+.upload-form,
+.search-form {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+input[type="text"] {
+    flex: 1;
+}
+
+input,
+button {
+    padding: 10px;
+    font-size: 16px;
+}
+
+button {
+    background: #0077ff;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+button:hover {
+    opacity: 0.9;
+}
+
+.file-list {
+    display: grid;
+    gap: 15px;
+}
+
+.file-card {
+    background: white;
+    padding: 15px;
+    border-radius: 10px;
+}
+
+.file-card a {
+    text-decoration: none;
+    color: #0077ff;
+}
