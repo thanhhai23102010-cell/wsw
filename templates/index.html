@@ -1,68 +1,57 @@
 <!DOCTYPE html>
-<html lang="vi">
+            Upload
+        </button>
 
-<head>
-    <meta charset="UTF-8">
-    <title>Quản Lý File Word</title>
+    </form>
 
-    <link rel="stylesheet" href="/static/style.css">
-</head>
+    <br>
 
-<body>
+    <!-- Search -->
+    <form method="GET" action="/">
 
-    <div class="container">
+        <input
+            type="text"
+            name="query"
+            placeholder="Tìm kiếm file hoặc nội dung..."
+            value="{{ query }}"
+        >
 
-        <h1>Quản Lý File Word</h1>
+        <button type="submit">
+            Tìm
+        </button>
 
-        <!-- Upload -->
-        <form action="/upload" method="POST" enctype="multipart/form-data">
+    </form>
 
-            <input type="file" name="file" accept=".docx" required>
+    <hr>
 
-            <button type="submit">
-                Upload
-            </button>
+    <!-- Danh sách file -->
+    {% for file in files %}
 
-        </form>
+    <div class="card">
 
-        <br>
+        <h2>{{ file[1] }}</h2>
 
-        <!-- Search -->
-        <form method="GET" action="/">
+        <div class="buttons">
 
-            <input
-                type="text"
-                name="query"
-                placeholder="Tìm kiếm file..."
-            >
+            <a href="{{ file[2] }}" target="_blank">
+                Download
+            </a>
 
-            <button type="submit">
-                Tìm
-            </button>
+            <a href="/preview/{{ file[0] }}">
+                Preview
+            </a>
 
-        </form>
-
-        <hr>
-
-        <!-- Danh sách file -->
-        {% for file in files %}
-
-        <div>
-
-            <h3>{{ file[1] }}</h3>
-
-            <a href="/download/{{ file[1] }}">
-                Tải xuống
+            <a href="/delete/{{ file[0] }}">
+                Delete
             </a>
 
         </div>
 
-        <hr>
-
-        {% endfor %}
-
     </div>
 
-</body>
+    {% endfor %}
 
+</div>
+
+</body>
 </html>
